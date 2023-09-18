@@ -1,66 +1,98 @@
-import { google } from 'googleapis';
+import React, { useEffect, useState } from 'react';
 
-export async function getServerSideProps({ query }) {
-  // Auth
-  const auth = await google.auth.getClient({
-    scopes: ['https://www.googleapis.com/auth/spreadsheets.readonly'],
-  });
+export default function Home() {
+  const [data, setData] = useState([]);
+  const [headers, setHeaders] = useState([]);
+  const [selectedMachine, setSelectedMachine] = useState('');
+  const [selectedParameter, setSelectedParameter] = useState('');
+  const [filteredData, setFilteredData] = useState([]); // Initialize with an empty array
+  const [machineList, setMachineList] = useState([]); // Add machineList state
+  const [isLoading, setIsLoading] = useState(true);
+  const [parameterList, setParameterList] = useState([]);
 
-  const sheets = google.sheets({ version: 'v4', auth });
-
-  // Query
-  const response = await sheets.spreadsheets.values.get({
-    spreadsheetId: process.env.SHEET_ID,
-    range: 'Data!A1:M23', // Adjust the range as needed
-  });
-
-  // Result
-  const values = response.data.values;
-
-  if (!values || values.length === 0) {
-    return {
-      notFound: true,
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const response = await fetch('/api/fetch-data');
+        if (!response.ok) {
+          throw new Error('Network response was not ok');
+        }
+        const { data, headers, machineList, parameterList } = await response.json();
+        setData(data);
+        setHeaders(headers);
+        setMachineList(machineList);
+        setParameterList(parameterList);
+        setIsLoading(false);
+      } catch (error) {
+        console.error('Error:', error);
+        setIsLoading(false);
+      }
     };
-  }
 
-  const headers = values[0]; // Assuming the first row contains headers
-  const data = values.slice(1).map((row) => {
-    const item = {};
-    headers.forEach((header, index) => {
-      item[header] = row[index];
+    fetchData();
+  }, []);
+
+  const handleViewClick = () => {
+    // Implement the logic to view the selected data here
+    // You can use the selectedMachine and selectedParameter values to filter the data
+    // and store it in a different variable
+    // Example:
+    const filteredResult = data.filter((item) => {
+      return (
+        (selectedMachine === '' || item['Machine'] === selectedMachine) &&
+        (selectedParameter === '' || item['Parameter'] === selectedParameter)
+      );
     });
-    return item;
-  });
 
-  return {
-    props: {
-      data,
-      headers,
-    },
+    // Set the filtered data in the state
+    setFilteredData(filteredResult);
   };
-}
 
-export default function ({ data, headers }) {
   return (
-    <table>
-      <thead>
-        <tr>
-          {headers.map((header) => (
-            <th key={header}>{header}</th>
+    <div>
+      <h1>Google Sheets Data Viewer</h1>
+      <div>
+        <label>Select Machine:</label>
+        <select
+          value={selectedMachine}
+          onChange={(e) => setSelectedMachine(e.target.value)}
+        >
+          <option value="">All</option>
+          {machineList.map((machine, index) => (
+            <option key={index} value={machine}>
+              {machine}
+            </option>
           ))}
-        </tr>
-      </thead>
-      <tbody>
-        {data.map((item, index) => (
-          <tr key={index}>
-            {headers.map((header) => (
-              <td key={header}>
-                <div dangerouslySetInnerHTML={{ __html: item[header] }}></div>
-              </td>
-            ))}
-          </tr>
-        ))}
-      </tbody>
-    </table>
+        </select>
+      </div>
+      <div>
+        <label>Select Parameter:</label>
+        <select
+          value={selectedParameter}
+          onChange={(e) => setSelectedParameter(e.target.value)}
+        >
+          <option value="">All</option>
+          {parameterList.map((parameter, index) => (
+            <option key={index} value={parameter}>
+              {parameter}
+            </option>
+          ))}
+        </select>
+      </div>
+      <button onClick={handleViewClick}>View</button>
+      <table>
+        <tbody>
+          {filteredData.map((item, index) => (
+            <tr key={index}>
+              {headers.map((header) => (
+                <td key={header}>
+                  <div dangerouslySetInnerHTML={{ __html: item[header] }}></div>
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   );
 }
