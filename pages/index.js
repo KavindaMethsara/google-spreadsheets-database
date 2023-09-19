@@ -1,52 +1,59 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from "react"
 
 export default function Home() {
-  const [data, setData] = useState([]);
-  const [headers, setHeaders] = useState([]);
-  const [selectedMachine, setSelectedMachine] = useState('');
-  const [selectedParameter, setSelectedParameter] = useState('');
-  const [filteredData, setFilteredData] = useState([]); // Initialize with an empty array
-  const [machineList, setMachineList] = useState([]); // Add machineList state
-  const [isLoading, setIsLoading] = useState(true);
-  const [parameterList, setParameterList] = useState([]);
+  const [data, setData] = useState([])
+  const [headers, setHeaders] = useState([])
+  const [selectedMachine, setSelectedMachine] = useState("")
+  const [selectedParameter, setSelectedParameter] = useState("")
+  const [filteredData, setFilteredData] = useState([]) // Initialize with an empty array
+  const [machineList, setMachineList] = useState([]) // Add machineList state
+  const [isLoading, setIsLoading] = useState(true)
+  const [parameterList, setParameterList] = useState([])
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await fetch('/api/fetch-data');
+        const response = await fetch("/api/fetch-data")
         if (!response.ok) {
-          throw new Error('Network response was not ok');
+          throw new Error("Network response was not ok")
         }
-        const { data, headers, machineList, parameterList } = await response.json();
-        setData(data);
-        setHeaders(headers);
-        setMachineList(machineList);
-        setParameterList(parameterList);
-        setIsLoading(false);
+        const { data, headers, machineList, parameterList } =
+          await response.json()
+        setData(data)
+        setHeaders(headers)
+        setMachineList(machineList)
+        setParameterList(parameterList)
+        setIsLoading(false)
       } catch (error) {
-        console.error('Error:', error);
-        setIsLoading(false);
+        console.error("Error:", error)
+        setIsLoading(false)
       }
-    };
+    }
 
-    fetchData();
-  }, []);
+    fetchData()
+  }, [])
 
   const handleViewClick = () => {
+    // console.log(data)
     // Implement the logic to view the selected data here
     // You can use the selectedMachine and selectedParameter values to filter the data
     // and store it in a different variable
     // Example:
+    // const filteredResult = data.filter((item) => {
+    //   return (
+    //     (selectedMachine === "" || item["Machine"] === selectedMachine) &&
+    //     (selectedParameter === "" || item["Parameter"] === selectedParameter)
+    //   )
+    // })
     const filteredResult = data.filter((item) => {
-      return (
-        (selectedMachine === '' || item['Machine'] === selectedMachine) &&
-        (selectedParameter === '' || item['Parameter'] === selectedParameter)
-      );
-    });
+      if (selectedMachine === "all") return data
+      return item.includes(selectedMachine) || item.includes(selectedParameter)
+    })
 
     // Set the filtered data in the state
-    setFilteredData(filteredResult);
-  };
+    setFilteredData(filteredResult)
+    // console.log(filteredResult)
+  }
 
   return (
     <div>
@@ -55,9 +62,12 @@ export default function Home() {
         <label>Select Machine:</label>
         <select
           value={selectedMachine}
-          onChange={(e) => setSelectedMachine(e.target.value)}
+          onChange={(e) => {
+            // console.log(selectedMachine)
+            setSelectedMachine(e.target.value)
+          }}
         >
-          <option value="">All</option>
+          <option value="all">All</option>
           {machineList.map((machine, index) => (
             <option key={index} value={machine}>
               {machine}
@@ -80,13 +90,17 @@ export default function Home() {
         </select>
       </div>
       <button onClick={handleViewClick}>View</button>
-      <table>
+      <table
+        border={"1"}
+        style={{ borderCollapse: "collapse", marginTop: 20 }}
+        cellPadding={"10"}
+      >
         <tbody>
           {filteredData.map((item, index) => (
             <tr key={index}>
-              {headers.map((header) => (
+              {item.map((header) => (
                 <td key={header}>
-                  <div dangerouslySetInnerHTML={{ __html: item[header] }}></div>
+                  <div>{header}</div>
                 </td>
               ))}
             </tr>
@@ -94,5 +108,5 @@ export default function Home() {
         </tbody>
       </table>
     </div>
-  );
+  )
 }
